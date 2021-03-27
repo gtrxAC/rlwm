@@ -13,7 +13,7 @@
 // #define YOUR_THEME
 
 #ifdef DEFAULT_THEME
-	#define ASSETS_FOLDER				"default"
+	#define ASSETS_FOLDER				"assets/default"
 	#define WINDOW_BG_COLOR				(Color)  {192, 176, 176, 255}
 	#define WINDOW_TEXT_COLOR			(Color)  {0,   0,   0,   255}
 	#define TITLE_BG_COLOR				(Color)  {64,  80,  144, 255}
