@@ -1,11 +1,10 @@
 #include <time.h>
-#include <raylib.h>
 #include <stdio.h>
+#include "raylib.h"
 #include "config.h"
 
 #define mcollide(x, y, w, h) \
-    CheckCollisionPointRec(GetMousePosition(), \
-        (Rectangle){(x)*SCALE, (y)*SCALE, (w)*SCALE, (h)*SCALE})
+    CheckCollisionPointRec(GetMousePosition(), (Rectangle){x, y, w, h})
 
 #define lmbdown IsMouseButtonDown(MOUSE_LEFT_BUTTON)
 #define lmbup IsMouseButtonReleased(MOUSE_LEFT_BUTTON)
@@ -75,9 +74,8 @@ void focusWindow(int index)
 {
     Window temp = windows[index];
     for (int i = index; i < WINDOW_LIMIT; i++)
-    {
         windows[i] = windows[i + 1];
-    }
+
     windows[WINDOW_LIMIT - 1] = temp;
 }
 
@@ -134,10 +132,7 @@ bool createWindow(Window window)
     // find a free window slot
     int slot = -1;
     for (int i = 0; i < WINDOW_LIMIT; i++)
-    {
-        if (!windows[i].active)
-            slot = i;
-    }
+        if (!windows[i].active) slot = i;
 
     if (slot != -1)
     {
@@ -157,7 +152,7 @@ bool createWindow(Window window)
             .active = true,
             .function = messageBoxWindow,
             .title = "Error",
-            .message = "Out of window slots! Close some windows before trying again.",
+            .message = "Out of window slots! Close some windows and try again.",
             .icon = IC_NOSLOTS};
         return false;
     }
@@ -203,8 +198,7 @@ void testWindow(Window *window, int index)
 void startMenuWindow(Window *window, int index)
 {
     // if this window loses focus, close it
-    if (!focused(index))
-        window->active = false;
+    if (!focused(index)) window->active = false;
 
     // check each window, if another start menu is open, don't create a new one
     for (int i = 0; i < WINDOW_LIMIT + 1; i++)
@@ -257,11 +251,11 @@ int main()
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "rlwm");
     SetTargetFPS(60);
     SetWindowIcon(LoadImage(TextFormat("%s/logo.png", ASSETS_FOLDER)));
+    SetMouseScale(1 / SCALE, 1 / SCALE);
 
     RenderTexture rt = LoadRenderTexture(RENDER_WIDTH, RENDER_HEIGHT);
 
-    if (FULLSCREEN)
-        ToggleFullscreen();
+    if (FULLSCREEN) ToggleFullscreen();
 
     font = LoadFontEx(TextFormat("%s/font.ttf", ASSETS_FOLDER), FONT_SIZE, NULL, 95);
     boldFont = LoadFontEx(TextFormat("%s/font_bold.ttf", ASSETS_FOLDER), FONT_SIZE, NULL, 95);
@@ -381,8 +375,7 @@ int main()
         for (int i = WINDOW_LIMIT - 1; i > -1; i--)
         {
             Window win = windows[i];
-            if (!win.active || win.minimized)
-                continue;
+            if (!win.active || win.minimized) continue;
 
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && mcollide(win.x, win.y, win.width, win.height))
             {
@@ -412,8 +405,8 @@ int main()
         {
             moving = true;
             resizing = false;
-            hook.x = GetMouseX() / SCALE - win->x;
-            hook.y = GetMouseY() / SCALE - win->y;
+            hook.x = GetMouseX() - win->x;
+            hook.y = GetMouseY() - win->y;
         }
 
         // if window is being moved, update its location
@@ -426,15 +419,15 @@ int main()
 
                 win->width = win->oldPos.width;
                 win->height = win->oldPos.height;
-                win->x = GetMouseX() / SCALE - win->width / 2;
+                win->x = GetMouseX() - win->width / 2;
                 win->y = 0;
 
-                hook.x = GetMouseX() / SCALE - win->x;
-                hook.y = GetMouseY() / SCALE - win->y;
+                hook.x = GetMouseX() - win->x;
+                hook.y = GetMouseY() - win->y;
             }
             cursor = MOUSE_CURSOR_RESIZE_ALL;
-            win->x = GetMouseX() / SCALE - hook.x;
-            win->y = GetMouseY() / SCALE - hook.y;
+            win->x = GetMouseX() - hook.x;
+            win->y = GetMouseY() - hook.y;
         }
 
         // _____________________________________________________________________
@@ -457,8 +450,8 @@ int main()
 
         if (resizing)
         {
-            win->width = GetMouseX() / SCALE - win->x;
-            win->height = GetMouseY() / SCALE - win->y;
+            win->width = GetMouseX() - win->x;
+            win->height = GetMouseY() - win->y;
 
             // make sure the window is not below its minimum size
             if (win->width < win->minWidth)
@@ -501,8 +494,7 @@ int main()
         for (int i = 0; i < WINDOW_LIMIT + 1; i++)
         {
             Window *win = &windows[i];
-            if (!win->active || win->minimized)
-                continue;
+            if (!win->active || win->minimized) continue;
 
             // draw window shadow
             DrawRectangle(
@@ -519,7 +511,7 @@ int main()
             const char *title = win->title;
             if (resizing && focused(i))
                 title = TextFormat("%d x %d", win->width, win->height);
-            if (moving && focused(i))
+            else if (moving && focused(i))
                 title = TextFormat("%d, %d", win->x, win->y);
             DrawTextEx(boldFont, title, (Vector2){win->x + 2, win->y + 2}, FONT_SIZE, 0.0f, TITLE_TEXT_COLOR);
 
@@ -534,10 +526,7 @@ int main()
             DrawTexture(
                 winButtons[3 + (lmbdown && hoverclose) * 4],
                 win->x + win->width - 14, win->y + 2, WHITE);
-            if (hoverclose && lmbup)
-            {
-                win->active = false;
-            }
+            if (hoverclose && lmbup) win->active = false;
 
             // maximize/restore button
             bool hovermax = mcollide(win->x + win->width - 27, win->y + 2, 12, 12);
@@ -571,10 +560,7 @@ int main()
             DrawTexture(
                 winButtons[0 + (lmbdown && hovermin) * 4],
                 win->x + win->width - 40, win->y + 2, WHITE);
-            if (hovermin && lmbup)
-            {
-                win->minimized = true;
-            }
+            if (hovermin && lmbup) win->minimized = true;
 
             // force window to be at least partially on screen
             if (win->x > RENDER_WIDTH - 5)
@@ -618,8 +604,7 @@ int main()
         int x = 50;
         for (int i = 0; i < WINDOW_LIMIT; i++)
         {
-            if (!windows[i].minimized)
-                continue;
+            if (!windows[i].minimized) continue;
 
             bool winbtnhover = mcollide(x, RENDER_HEIGHT - 17, 96, 16);
             DrawTexture(largeButtons[winbtnhover && lmbdown], x, RENDER_HEIGHT - 17, WHITE);
@@ -676,11 +661,8 @@ int main()
     UnloadTexture(bg);
     UnloadRenderTexture(rt);
 
-    for (int i = 0; i < IC_COUNT; i++)
-        UnloadTexture(icons[i]);
-
-    for (int i = 0; i < 8; i++)
-        UnloadTexture(winButtons[i]);
+    for (int i = 0; i < IC_COUNT; i++) UnloadTexture(icons[i]);
+    for (int i = 0; i < 8; i++) UnloadTexture(winButtons[i]);
     
     // small,large,start
     for (int i = 0; i < 2; i++)
